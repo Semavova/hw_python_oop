@@ -129,7 +129,7 @@ CODENAMES = {
 }
 
 
-def read_package(workout_type: str, data: list[int]) -> Training:
+def read_package(workout_type: str, data: list) -> Training:
     """Прочитать данные полученные от датчиков."""
     if len(data) == len(fields(CODENAMES[workout_type])):
         return CODENAMES[workout_type](*data)
