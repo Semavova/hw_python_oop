@@ -10,7 +10,7 @@ class InfoMessage:
     speed: float
     calories: float
 
-    INFO_MESSAGE = (
+    INFO = (
         'Тип тренировки: {training_type}; '
         'Длительность: {duration:.3f} ч.; '
         'Дистанция: {distance:.3f} км; '
@@ -19,7 +19,7 @@ class InfoMessage:
     )
 
     def get_message(self):
-        return(self.INFO_MESSAGE.format(**asdict(self)))
+        return self.INFO.format(**asdict(self))
 
 
 @dataclass
@@ -58,27 +58,27 @@ class Training:
 @dataclass
 class Running(Training):
     """Тренировка: бег."""
-    SPEED_MULTYPLIER = 18
-    SPEED_CORRECTION_FACTOR = 20
+    SPEED_FACTOR = 18
+    SPEED_SHIFT = 20
 
     def get_spent_calories(self):
         return((
-            self.SPEED_MULTYPLIER * self.get_mean_speed()
-            - self.SPEED_CORRECTION_FACTOR)
-            * self.weight / self.M_IN_KM * (self.duration * self.MIN_IN_H))
+            self.SPEED_FACTOR * self.get_mean_speed()
+            - self.SPEED_SHIFT) * self.weight
+            / self.M_IN_KM * (self.duration * self.MIN_IN_H))
 
 
 @dataclass
 class SportsWalking(Training):
     """Тренировка: спортивная ходьба."""
-    height: int
-    WEIGHT_MULTYPLIER_1 = 0.035
-    WEIGHT_MULTYPLIER_2 = 0.029
+    height: float
+    WEIGHT_FACTOR_1 = 0.035
+    WEIGHT_FACTOR_2 = 0.029
 
     def get_spent_calories(self):
-        return((self.WEIGHT_MULTYPLIER_1 * self.weight + (
+        return((self.WEIGHT_FACTOR_1 * self.weight + (
             self.get_mean_speed() ** 2 // self.height)
-            * self.WEIGHT_MULTYPLIER_2 * self.weight)
+            * self.WEIGHT_FACTOR_2 * self.weight)
             * (self.duration * self.MIN_IN_H))
 
 
@@ -88,8 +88,8 @@ class Swimming(Training):
     length_pool: float
     count_pool: int
     LEN_STEP = 1.38
-    SPEED_ADDITION = 1.1
-    WEIGHT_MULTYPLIER = 2
+    SPEED_SHIFT = 1.1
+    WEIGHT_FACTOR = 2
 
     def get_distance(self):
         return self.action * self.LEN_STEP / self.M_IN_KM
@@ -99,8 +99,8 @@ class Swimming(Training):
                 / self.duration)
 
     def get_spent_calories(self):
-        return((self.get_mean_speed() + self.SPEED_ADDITION)
-               * self.WEIGHT_MULTYPLIER * self.weight)
+        return((self.get_mean_speed() + self.SPEED_SHIFT)
+               * self.WEIGHT_FACTOR * self.weight)
 
 
 CODE_NAMES = {
@@ -113,19 +113,25 @@ EXCEPTION_MESSAGE = (
     'ожидали число параметров {1}, '
     'получили {2}'
 )
+CODE_EXCEPTION_MESSAGE = (
+    'Неизвестный тип тренировки "{}". '
+    'Поддерживаемые типы тренировок: SWM, RUN, WLK'
+)
 
 
 def read_package(workout_type: str, data: list) -> Training:
     """Прочитать данные полученные от датчиков."""
-    if len(data) == len(fields(CODE_NAMES[workout_type])):
-        return CODE_NAMES[workout_type](*data)
-    else:
+    if workout_type in CODE_NAMES:
+        if len(data) == len(fields(CODE_NAMES[workout_type])):
+            return CODE_NAMES[workout_type](*data)
+
         raise ValueError(
             EXCEPTION_MESSAGE.format(
                 workout_type,
                 len(fields(CODE_NAMES[workout_type])),
                 len(data))
         )
+    raise ValueError(CODE_EXCEPTION_MESSAGE.format(workout_type))
 
 
 def main(training: Training) -> None:
