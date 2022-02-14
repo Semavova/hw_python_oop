@@ -1,4 +1,4 @@
-from dataclasses import dataclass, fields
+from dataclasses import asdict, dataclass, fields
 
 
 @dataclass
@@ -11,22 +11,15 @@ class InfoMessage:
     calories: float
 
     INFO_MESSAGE = (
-        'Тип тренировки: {key_to_insert[0]}; '
-        'Длительность: {key_to_insert[1]:.3f} ч.; '
-        'Дистанция: {key_to_insert[2]:.3f} км; '
-        'Ср. скорость: {key_to_insert[3]:.3f} км/ч; '
-        'Потрачено ккал: {key_to_insert[4]:.3f}.'
+        'Тип тренировки: {training_type}; '
+        'Длительность: {duration:.3f} ч.; '
+        'Дистанция: {distance:.3f} км; '
+        'Ср. скорость: {speed:.3f} км/ч; '
+        'Потрачено ккал: {calories:.3f}.'
     )
 
     def get_message(self):
-        data = [
-            self.training_type,
-            self.duration,
-            self.distance,
-            self.speed,
-            self.calories
-        ]
-        return self.INFO_MESSAGE.format(key_to_insert=data)
+        return(self.INFO_MESSAGE.format(**asdict(self)))
 
 
 @dataclass
@@ -37,7 +30,7 @@ class Training:
     weight: float
     LEN_STEP = 0.65
     M_IN_KM = 1000
-    M_IN_H = 60
+    MIN_IN_H = 60
 
     def get_distance(self) -> float:
         """Получить дистанцию в км."""
@@ -65,48 +58,37 @@ class Training:
 @dataclass
 class Running(Training):
     """Тренировка: бег."""
-    action: int
-    duration: float
-    weight: float
-    AVG_SPEED_MULTYPLIER = 18
-    AVG_SPEED_CORRECTION_FACTOR = 20
+    SPEED_MULTYPLIER = 18
+    SPEED_CORRECTION_FACTOR = 20
 
     def get_spent_calories(self):
-        spent_calories = ((
-            self.AVG_SPEED_MULTYPLIER * self.get_mean_speed()
-            - self.AVG_SPEED_CORRECTION_FACTOR)
-            * self.weight / self.M_IN_KM * (self.duration * self.M_IN_H))
-        return spent_calories
+        return((
+            self.SPEED_MULTYPLIER * self.get_mean_speed()
+            - self.SPEED_CORRECTION_FACTOR)
+            * self.weight / self.M_IN_KM * (self.duration * self.MIN_IN_H))
 
 
 @dataclass
 class SportsWalking(Training):
     """Тренировка: спортивная ходьба."""
-    action: int
-    duration: float
-    weight: float
     height: int
     WEIGHT_MULTYPLIER_1 = 0.035
     WEIGHT_MULTYPLIER_2 = 0.029
 
     def get_spent_calories(self):
-        spent_calories = ((self.WEIGHT_MULTYPLIER_1 * self.weight + (
+        return((self.WEIGHT_MULTYPLIER_1 * self.weight + (
             self.get_mean_speed() ** 2 // self.height)
             * self.WEIGHT_MULTYPLIER_2 * self.weight)
-            * (self.duration * self.M_IN_H))
-        return spent_calories
+            * (self.duration * self.MIN_IN_H))
 
 
 @dataclass
 class Swimming(Training):
     """Тренировка: плавание."""
-    action: int
-    duration: float
-    weight: float
     length_pool: float
     count_pool: int
     LEN_STEP = 1.38
-    AVG_SPEED_ADDITION = 1.1
+    SPEED_ADDITION = 1.1
     WEIGHT_MULTYPLIER = 2
 
     def get_distance(self):
@@ -117,22 +99,33 @@ class Swimming(Training):
                 / self.duration)
 
     def get_spent_calories(self):
-        spent_calories = ((self.get_mean_speed() + self.AVG_SPEED_ADDITION)
-                          * self.WEIGHT_MULTYPLIER * self.weight)
-        return spent_calories
+        return((self.get_mean_speed() + self.SPEED_ADDITION)
+               * self.WEIGHT_MULTYPLIER * self.weight)
 
 
-CODENAMES = {
+CODE_NAMES = {
     'SWM': Swimming,
     'RUN': Running,
     'WLK': SportsWalking
 }
+EXCEPTION_MESSAGE = (
+    'Для тренировки {0} '
+    'ожидали число параметров {1}, '
+    'получили {2}'
+)
 
 
 def read_package(workout_type: str, data: list) -> Training:
     """Прочитать данные полученные от датчиков."""
-    if len(data) == len(fields(CODENAMES[workout_type])):
-        return CODENAMES[workout_type](*data)
+    if len(data) == len(fields(CODE_NAMES[workout_type])):
+        return CODE_NAMES[workout_type](*data)
+    else:
+        raise ValueError(
+            EXCEPTION_MESSAGE.format(
+                workout_type,
+                len(fields(CODE_NAMES[workout_type])),
+                len(data))
+        )
 
 
 def main(training: Training) -> None:
