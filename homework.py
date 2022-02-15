@@ -76,10 +76,22 @@ class SportsWalking(Training):
     WEIGHT_FACTOR_2 = 0.029
 
     def get_spent_calories(self):
-        return((self.WEIGHT_FACTOR_1 * self.weight + (
-            self.get_mean_speed() ** 2 // self.height)
-            * self.WEIGHT_FACTOR_2 * self.weight)
-            * (self.duration * self.MIN_IN_H))
+        return (
+            (
+                self.WEIGHT_FACTOR_1
+                * self.weight
+                + (
+                    self.get_mean_speed() ** 2
+                    // self.height
+                )
+                * self.WEIGHT_FACTOR_2
+                * self.weight
+            )
+            * (
+                self.duration
+                * self.MIN_IN_H
+            )
+        )
 
 
 @dataclass
@@ -115,23 +127,23 @@ EXCEPTION_MESSAGE = (
 )
 CODE_EXCEPTION_MESSAGE = (
     'Неизвестный тип тренировки "{}". '
-    'Поддерживаемые типы тренировок: SWM, RUN, WLK'
 )
 
 
 def read_package(workout_type: str, data: list) -> Training:
     """Прочитать данные полученные от датчиков."""
-    if workout_type in CODE_NAMES:
-        if len(data) == len(fields(CODE_NAMES[workout_type])):
-            return CODE_NAMES[workout_type](*data)
-
+    if workout_type not in CODE_NAMES:
+        raise ValueError(
+            CODE_EXCEPTION_MESSAGE.format(workout_type)
+        )
+    elif len(data) != len(fields(CODE_NAMES[workout_type])):
         raise ValueError(
             EXCEPTION_MESSAGE.format(
                 workout_type,
                 len(fields(CODE_NAMES[workout_type])),
                 len(data))
         )
-    raise ValueError(CODE_EXCEPTION_MESSAGE.format(workout_type))
+    return CODE_NAMES[workout_type](*data)
 
 
 def main(training: Training) -> None:
